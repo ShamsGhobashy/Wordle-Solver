@@ -58,7 +58,7 @@ def code_to_pattern(code):
     return ''.join(result)
 
 def build_pattern_matrix(Guesses, Targets):
-    ##moved the matrix initialization here to avoid creating an empty one if it's already was saved before
+    ## moved the matrix initialization here to avoid creating an empty one if it's already was saved before
     M = np.empty((G,A), dtype = np.uint8)
     #we used enumerate because it is better than accessing the element i in the Guesses array(much faster) and less exposure to mistakes.
     for i, guess in enumerate(Guesses):
@@ -100,7 +100,7 @@ def computing_best_guess(C):
     return best_indx, best_entropy
 
 
-## list of indices to easyly filter it out       
+## list of indices to easily filter it out       
 C = list(range(A))
 ## the game loop
 while True:
@@ -127,7 +127,7 @@ while True:
     if(feedback_code == 242):
         print("solved")
         break
-    ## gets the index of out input guess (Guesses == guess -> returns an array of true or false -> np.where -> gets the index of true in the form of a tuple -> [0][0] convert it into an array and get the first element)    
+    ## gets the index of the input guess (Guesses == guess -> returns an array of true or false -> np.where -> gets the index of true in the form of a tuple -> [0][0] convert it into an array and get the first element)    
     guess_idx = np.where(Guesses == guess)[0][0]
-    ## filters out the list of indeces keeping the ones matching the patterns by a "list comprehension"  
+    ## filters out the list of indices keeping the ones matching the patterns by a "list comprehension"  
     C = [j for j in C if feedback_code == M[guess_idx, j]]
