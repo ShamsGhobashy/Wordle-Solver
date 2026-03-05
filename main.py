@@ -10,7 +10,7 @@ Targets = []
 with open('dictionary_5_letter.json', 'r') as file:
     Guesses = json.load(file)
 
-with open('targets_5_letters.json', 'r') as file:
+with open('targets_5_letter.json', 'r') as file:
     Targets = json.load(file)
 
 G = len(Guesses)
@@ -21,7 +21,6 @@ Targets = np.array(Targets)
 
 # uint8 is used to save memory, this is an 8-bit integer to store the values in the matrix, as the largest value is 242, which is less than 255=(2**8).
 # we could have used np.zeros ,but np.empty is much faster.
-M = np.empty((G,A), dtype = np.uint8)
 
 def get_feedback(guess, target):
     feedback = ['r'] * 5
@@ -59,13 +58,14 @@ def code_to_pattern(code):
     return ''.join(result)
 
 def build_pattern_matrix(Guesses, Targets):
+    M = np.empty((G,A), dtype = np.uint8)
     #we used enumerate because it is better than accessing the element i in the Guesses array(much faster) and less exposure to mistakes.
     for i, guess in enumerate(Guesses):
         for j, target in enumerate(Targets):
             M[i,j] = pattern_to_code(get_feedback(guess, target))
+    return M
 
 #we have to save the matrix in a file, because we do not need to calcuate it everytime we start the game(it will be calculated once).
-np.save('pattern_matrix.npy', M)
 
 #loading the matrix file at the first of the game
 if os.path.exists('pattern_matrix.npy'):
@@ -74,25 +74,53 @@ else:
     M = build_pattern_matrix(Guesses, Targets)
     np.save('pattern_matrix.npy', M)
 
-def computing_best_guess(Guesses, C):
-    best_guess = ""
-    best_entropy = 0
+def computing_best_guess(C):
+    best_indx = -1
+    best_entropy = -1
     #C is the array of targets' indices, which will be changed after each round 
     # by filteration as we will minimize it by removing all words 
     # that if we have used in the guess instead of the word we have used 
     # they will not give us the same pattern/feedback
+    candidate_words = [Targets[j] for j in C]
     for i, guess in enumerate(Guesses):
         Entropy = 0
         patterns = M[i, C]
         unique_patterns, counts = np.unique(patterns, return_counts=True)
         probabilities = counts / len(C)
         for p in probabilities:
-            Entropy += - p * math.log(p, 2)
-            if Entropy > best_entropy:
+            Entropy += - p * math.log2(p)
+        if (Entropy > best_entropy) or ((Entropy == best_entropy) and (guess in candidate_words)):
                 best_entropy = Entropy 
-                best_guess = guess
-    return best_guess
+                best_indx = i
+    return best_indx, best_entropy
         
+C = list(range(A))
     
+while True:
 
- 
+    best_indx, best_entropy = computing_best_guess(C)
+    prior_entropy = math.log2(len(C)) if len(C) > 1 else 0
+
+    print(f"remaining candidates:  {len(C)}")
+    print(f"H(W) (prior entropy) = {prior_entropy: .3f} bits")
+    print(f"H(Y) (best guess's entropy) = {best_entropy: .3f} bits")
+    print(f"H(W|Y) (posterior entropy) = {prior_entropy - best_entropy : .3f} bits")
+    print(f"I(W;Y) information gain = {best_entropy: .3f} bits")
+    print("BEST=" + Guesses[best_indx])
+
+    guess = input()
+    if guess not in Guesses:
+        print("invalid word, try again")
+        continue
+
+    feedback = input()
+
+    feedback_code = pattern_to_code(feedback)
+        
+    if(feedback_code == 242):
+        print("solved")
+        break
+        
+    guess_idx = np.where(Guesses == guess)[0][0]
+        
+    C = [j for j in C if feedback_code == M[guess_idx, j]]
