@@ -58,6 +58,7 @@ def code_to_pattern(code):
     return ''.join(result)
 
 def build_pattern_matrix(Guesses, Targets):
+    ##moved the matrix initialization here to avoid creating an empty one if it's already was saved before
     M = np.empty((G,A), dtype = np.uint8)
     #we used enumerate because it is better than accessing the element i in the Guesses array(much faster) and less exposure to mistakes.
     for i, guess in enumerate(Guesses):
@@ -75,12 +76,15 @@ else:
     np.save('pattern_matrix.npy', M)
 
 def computing_best_guess(C):
+    ## changed the initialization of them for safety
     best_indx = -1
     best_entropy = -1
     #C is the array of targets' indices, which will be changed after each round 
     # by filteration as we will minimize it by removing all words 
     # that if we have used in the guess instead of the word we have used 
     # they will not give us the same pattern/feedback
+
+    ## an array of all candidate words 
     candidate_words = [Targets[j] for j in C]
     for i, guess in enumerate(Guesses):
         Entropy = 0
@@ -89,13 +93,16 @@ def computing_best_guess(C):
         probabilities = counts / len(C)
         for p in probabilities:
             Entropy += - p * math.log2(p)
+        ## updated the condition to handle an edge case
         if (Entropy > best_entropy) or ((Entropy == best_entropy) and (guess in candidate_words)):
                 best_entropy = Entropy 
                 best_indx = i
     return best_indx, best_entropy
-        
+
+
+## list of indices to easyly filter it out       
 C = list(range(A))
-    
+## the game loop
 while True:
 
     best_indx, best_entropy = computing_best_guess(C)
@@ -120,7 +127,7 @@ while True:
     if(feedback_code == 242):
         print("solved")
         break
-        
+    ## gets the index of out input guess (Guesses == guess -> returns an array of true or false -> np.where -> gets the index of true in the form of a tuple -> [0][0] convert it into an array and get the first element)    
     guess_idx = np.where(Guesses == guess)[0][0]
-        
+    ## filters out the list of indeces keeping the ones matching the patterns by a "list comprehension"  
     C = [j for j in C if feedback_code == M[guess_idx, j]]
