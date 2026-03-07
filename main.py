@@ -67,9 +67,7 @@ else:
     np.save('pattern_matrix.npy', M)
 
 def computing_best_guess(list_of_indices):
-    best_indx = -1
-    best_entropy = -1
-
+    best_words = []
     candidate_words = [Targets[j] for j in list_of_indices]
     for i, guess in enumerate(Guesses):
         Entropy = 0
@@ -78,10 +76,10 @@ def computing_best_guess(list_of_indices):
         probabilities = counts / len(list_of_indices)
         for p in probabilities:
             Entropy += - p * math.log2(p)
-        if (Entropy > best_entropy) or ((Entropy == best_entropy) and (guess in candidate_words)):
-                best_entropy = Entropy 
-                best_indx = i
-    return best_indx, best_entropy
+        is_candidate = 1 if guess in candidate_words else 0
+        best_words.append((Entropy, is_candidate, i))
+                
+    return best_words
       
 list_of_indices = list(range(length_of_Targets))
 
@@ -89,7 +87,19 @@ rounds = 0
 
 while rounds < 6:
 
-    best_indx, best_entropy = computing_best_guess(list_of_indices)
+    if len(list_of_indices) == 1:
+        print(f"BEST={Targets[list_of_indices[0]]}")
+        guess = input()
+        feedback = input()
+        if pattern_to_code(feedback) == 242:
+            print("solved")
+            break
+        continue
+
+    best_words = computing_best_guess(list_of_indices)
+    best_words.sort(reverse=True)
+    top_20 = best_words[:20]
+    best_entropy, is_candidate, best_indx = top_20[0] 
     prior_entropy = math.log2(len(list_of_indices)) if len(list_of_indices) > 1 else 0
 
     print(f"remaining candidates:  {len(list_of_indices)}")
@@ -97,6 +107,10 @@ while rounds < 6:
     print(f"H(Y) (best guess's entropy) = {best_entropy: .3f} bits")
     print(f"H(W|Y) (posterior entropy) = {prior_entropy - best_entropy : .3f} bits")
     print(f"I(W;Y) information gain = {best_entropy: .3f} bits")
+
+    for entropy, is_candidate, idx in top_20:
+        print(f"  {Guesses[idx]} — H(Y)={entropy:.3f} bits")
+
     print("BEST=" + Guesses[best_indx])
 
     guess = input()
@@ -105,16 +119,22 @@ while rounds < 6:
         continue
 
     feedback = input()
+    if len(feedback) != 5 or not all(c in {'r', 'y', 'g'} for c in feedback):
+        print("invalid feedback, try again")
+        continue
 
     feedback_code = pattern_to_code(feedback)
-
-    if (len(list_of_indices) == 1 and feedback_code != 242) or len(list_of_indices) == 0 :
-        print("Error, some pattern was wrong")
-        break
         
     if(feedback_code == 242):
         print("solved")
         break   
     guess_idx = np.where(Guesses == guess)[0][0] 
     list_of_indices = [j for j in list_of_indices if feedback_code == M[guess_idx, j]]
+    
+    if len(list_of_indices) == 0 :
+        print("Error, some pattern was wrong")
+        break
+
     rounds += 1
+else:
+    print("failed to solve")
