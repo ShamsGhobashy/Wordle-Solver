@@ -108,7 +108,7 @@ while rounds < 6:
 
     feedback_code = pattern_to_code(feedback)
 
-    if len(list_of_indices) == 1 and feedback_code != 242:
+    if (len(list_of_indices) == 1 and feedback_code != 242) or len(list_of_indices) == 0 :
         print("Error, some pattern was wrong")
         break
         
