@@ -85,7 +85,9 @@ def computing_best_guess(list_of_indices):
       
 list_of_indices = list(range(length_of_Targets))
 
-while True:
+rounds = 0
+
+while rounds < 6:
 
     best_indx, best_entropy = computing_best_guess(list_of_indices)
     prior_entropy = math.log2(len(list_of_indices)) if len(list_of_indices) > 1 else 0
@@ -105,9 +107,14 @@ while True:
     feedback = input()
 
     feedback_code = pattern_to_code(feedback)
+
+    if len(list_of_indices) == 1 and feedback_code != 242:
+        print("Error, some pattern was wrong")
+        break
         
     if(feedback_code == 242):
         print("solved")
         break   
     guess_idx = np.where(Guesses == guess)[0][0] 
     list_of_indices = [j for j in list_of_indices if feedback_code == M[guess_idx, j]]
+    rounds += 1
